@@ -932,12 +932,24 @@ function authErrKo(error){
     return "확인 메일 발송 한도에 걸렸어요. 기본 메일은 시간당 2통이라 1시간 뒤 다시 시도해주세요";
   }
   if(code === "over_request_rate_limit" || msg.includes("rate limit") || msg.includes("Too many")) {
-    return "요청이 잠시 제한됐어요 — 몇 분 뒤 다시 시도해주세요";
+    const wait = msg.match(/after (\d+) seconds?/i);
+    return wait
+      ? `요청이 잠시 제한됐어요 — ${wait[1]}초 뒤 다시 시도해주세요`
+      : "로그인 요청이 잠시 제한됐어요 — 잠깐 뒤 다시 시도해주세요";
   }
   return "실패했어요: " + msg;
 }
 function showAuthOverlay(){ $("#authBg").style.display = "flex"; $("#authMsg").textContent = ""; }
 function hideAuthOverlay(){ $("#authBg").style.display = "none"; }
+
+let authBusy = false;
+function setAuthBusy(busy){
+  authBusy = busy;
+  ["btnLogin", "btnSignup"].forEach(id=>{
+    const btn = $("#" + id);
+    if(btn) btn.disabled = busy;
+  });
+}
 
 function renderHeaderAccount(){
   const el = $("#rUser");
@@ -1020,21 +1032,41 @@ async function initAuth(){
   if(localStorage.getItem("mmr_guest") !== "1") showAuthOverlay();
 
   $("#btnLogin").onclick = async ()=>{
+    if(authBusy) return;
     const email = $("#authEmail").value.trim(), pw = $("#authPw").value;
     if(!email || !pw){ $("#authMsg").textContent = "이메일과 비밀번호를 입력해주세요"; return; }
+    setAuthBusy(true);
     $("#authMsg").textContent = "로그인 중…";
-    const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
-    if(error){ $("#authMsg").textContent = authErrKo(error); return; }
-    await onLogin(data.user);
+    try {
+      const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
+      if(error){
+        console.warn("Supabase login error", { code:error.code, status:error.status, message:error.message });
+        $("#authMsg").textContent = authErrKo(error);
+        return;
+      }
+      await onLogin(data.user);
+    } finally {
+      setAuthBusy(false);
+    }
   };
   $("#btnSignup").onclick = async ()=>{
+    if(authBusy) return;
     const email = $("#authEmail").value.trim(), pw = $("#authPw").value;
     if(!email || !pw){ $("#authMsg").textContent = "이메일과 비밀번호를 입력해주세요"; return; }
+    setAuthBusy(true);
     $("#authMsg").textContent = "가입 중…";
-    const { data, error } = await sb.auth.signUp({ email, password: pw });
-    if(error){ $("#authMsg").textContent = authErrKo(error); return; }
-    if(data.session){ await onLogin(data.user); return; }
-    $("#authMsg").textContent = "📧 확인 메일을 보냈어요! 메일의 링크를 누른 뒤 로그인해주세요";
+    try {
+      const { data, error } = await sb.auth.signUp({ email, password: pw });
+      if(error){
+        console.warn("Supabase signup error", { code:error.code, status:error.status, message:error.message });
+        $("#authMsg").textContent = authErrKo(error);
+        return;
+      }
+      if(data.session){ await onLogin(data.user); return; }
+      $("#authMsg").textContent = "📧 확인 메일을 보냈어요! 메일의 링크를 누른 뒤 로그인해주세요";
+    } finally {
+      setAuthBusy(false);
+    }
   };
   $("#btnGuest").onclick = ()=>{
     localStorage.setItem("mmr_guest", "1");
