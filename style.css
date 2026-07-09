@@ -1,0 +1,192 @@
+@font-face {
+  font-family: 'DungGeunMo';
+  src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.3/DungGeunMo.woff') format('woff');
+  font-weight: normal; font-display: swap;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --bg:#bfe3b4; --panel:#fdf6e3; --panel2:#f3e7c9; --line:#8a6d4b;
+  --brown:#6b4f33; --pink:#f2a2b8; --green:#7cbf6b; --blue:#8ec9e8;
+  --gold:#f0c245; --red:#e07a7a; --txt:#4a3826;
+}
+body {
+  font-family:'DungGeunMo','Galmuri11',monospace;
+  background:var(--bg); color:var(--txt);
+  image-rendering:pixelated;
+  min-height:100vh; padding-bottom:30px;
+  background-image:
+    radial-gradient(circle at 20% 15%, rgba(255,255,255,.35) 0 2px, transparent 3px),
+    radial-gradient(circle at 70% 40%, rgba(255,255,255,.3) 0 2px, transparent 3px),
+    radial-gradient(circle at 45% 80%, rgba(255,255,255,.25) 0 2px, transparent 3px);
+  background-size:180px 180px, 220px 220px, 260px 260px;
+}
+#app { max-width:860px; margin:0 auto; padding:10px; }
+canvas { image-rendering:pixelated; }
+
+/* ---- 헤더 ---- */
+#header {
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  background:var(--panel); border:4px solid var(--line); border-radius:12px;
+  padding:8px 14px; margin-bottom:8px;
+  box-shadow:0 4px 0 rgba(0,0,0,.15);
+}
+#logo { font-size:22px; letter-spacing:1px; }
+#logo span { color:var(--pink); }
+.res {
+  margin-left:auto; display:flex; gap:12px; font-size:15px;
+}
+.res .chip {
+  background:var(--panel2); border:2px solid var(--line); border-radius:8px;
+  padding:3px 10px; white-space:nowrap;
+}
+
+/* ---- 탭 ---- */
+#tabs { display:flex; gap:6px; margin-bottom:8px; }
+.tab {
+  flex:1; text-align:center; padding:10px 4px; cursor:pointer;
+  background:var(--panel2); border:4px solid var(--line); border-bottom-width:6px;
+  border-radius:10px 10px 4px 4px; font-size:16px; user-select:none;
+  transition:transform .05s;
+}
+.tab:hover { transform:translateY(-2px); }
+.tab.on { background:var(--panel); border-bottom-color:var(--pink); color:#c2607e; }
+
+/* ---- 패널 공통 ---- */
+.panel {
+  background:var(--panel); border:4px solid var(--line); border-radius:12px;
+  padding:14px; box-shadow:0 4px 0 rgba(0,0,0,.15);
+}
+h3.sec { font-size:16px; margin-bottom:8px; border-bottom:2px dashed var(--line); padding-bottom:4px; }
+.hint { font-size:12px; color:#8a7357; margin-top:4px; }
+button.px {
+  font-family:inherit; font-size:14px; cursor:pointer; color:var(--txt);
+  background:var(--gold); border:3px solid var(--line); border-radius:8px;
+  padding:6px 12px; box-shadow:0 3px 0 var(--line);
+}
+button.px:active { transform:translateY(2px); box-shadow:0 1px 0 var(--line); }
+button.px:disabled { background:#cfc4ab; color:#948a76; cursor:not-allowed; box-shadow:0 3px 0 #a3987f; }
+button.px.pink { background:var(--pink); }
+button.px.green { background:var(--green); }
+button.px.blue { background:var(--blue); }
+button.px.small { font-size:12px; padding:4px 8px; }
+
+/* ---- 말 카드 ---- */
+.horse-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; }
+.hcard {
+  background:var(--panel2); border:3px solid var(--line); border-radius:10px;
+  padding:8px; text-align:center; cursor:pointer; position:relative;
+}
+.hcard:hover { background:#efe0ba; }
+.hcard.sel { outline:3px solid var(--pink); background:#fde8ef; }
+.hcard.dis { opacity:.45; cursor:not-allowed; }
+.hcard .nm { font-size:14px; margin-top:2px; }
+.hcard .bd { font-size:11px; color:#8a7357; }
+.hcard .special-tag {
+  position:absolute; top:4px; right:4px; font-size:10px; color:#fff;
+  background:linear-gradient(45deg,#e8a3d8,#8ec9e8); border-radius:6px; padding:1px 5px;
+}
+.hcard .baby-tag {
+  position:absolute; top:4px; left:4px; font-size:10px; color:#fff;
+  background:var(--green); border-radius:6px; padding:1px 5px;
+}
+.statbar { height:10px; background:#d9cdb0; border:2px solid var(--line); border-radius:5px; overflow:hidden; margin:2px 0; }
+.statbar > div { height:100%; }
+.st-row { display:flex; align-items:center; gap:6px; font-size:13px; margin:3px 0; }
+.st-row .lb { width:52px; text-align:left; }
+.st-row .vl { width:52px; text-align:right; font-size:12px; }
+.st-row .statbar { flex:1; }
+
+/* ---- 목장 ---- */
+#ranchCanvasWrap { border:4px solid var(--line); border-radius:10px; overflow:hidden; background:#a8d69a; margin-bottom:10px; }
+#ranchCanvas { display:block; width:100%; }
+.bld-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:8px; }
+.bld {
+  background:var(--panel2); border:3px solid var(--line); border-radius:10px; padding:10px;
+}
+.bld .ttl { font-size:15px; }
+.bld .desc { font-size:12px; color:#8a7357; margin:4px 0 8px; min-height:30px; }
+
+/* ---- 경주 ---- */
+#raceWrap { display:none; }
+#raceCanvas { display:block; width:100%; border:4px solid var(--line); border-radius:10px; background:#9fd18f; }
+#raceRank { font-size:13px; margin-top:6px; min-height:20px; }
+.cup {
+  background:var(--panel2); border:3px solid var(--line); border-radius:10px; padding:10px;
+  display:flex; align-items:center; gap:10px; margin-bottom:8px;
+}
+.cup .info { flex:1; }
+.cup .ttl { font-size:15px; }
+.cup .desc { font-size:12px; color:#8a7357; }
+
+/* ---- 교배 ---- */
+.pair-box { display:flex; gap:10px; align-items:stretch; margin-bottom:10px; flex-wrap:wrap; }
+.pslot {
+  flex:1; min-width:140px; border:3px dashed var(--line); border-radius:10px;
+  padding:10px; text-align:center; background:var(--panel2); min-height:110px;
+}
+.pslot.filled { border-style:solid; background:#fde8ef; }
+.heart { align-self:center; font-size:24px; color:var(--pink); }
+
+/* ---- 모달/토스트 ---- */
+#modalBg {
+  display:none; position:fixed; inset:0; background:rgba(60,40,20,.55); z-index:50;
+  align-items:center; justify-content:center;
+}
+#modal {
+  background:var(--panel); border:4px solid var(--line); border-radius:14px;
+  padding:20px; max-width:420px; width:90%; text-align:center;
+  box-shadow:0 6px 0 rgba(0,0,0,.25);
+}
+#modal h2 { font-size:20px; margin-bottom:10px; }
+#toasts { position:fixed; left:50%; bottom:20px; transform:translateX(-50%); z-index:60; }
+.toast {
+  background:var(--brown); color:#fff; font-size:13px; padding:8px 16px;
+  border-radius:8px; margin-top:6px; border:2px solid #3d2c1a;
+  animation:tst 2.6s forwards;
+}
+@keyframes tst { 0%{opacity:0;transform:translateY(10px)} 10%{opacity:1;transform:none} 80%{opacity:1} 100%{opacity:0} }
+
+.cool { color:#b06a6a; font-size:12px; }
+.gender-f { color:#d16a8e; } .gender-m { color:#5a8ec9; }
+.two-col { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media (max-width:640px){ .two-col{grid-template-columns:1fr;} }
+
+/* ---- 로그인 오버레이 ---- */
+#authBg {
+  display:none; position:fixed; inset:0; background:rgba(74,56,38,.78); z-index:55;
+  align-items:center; justify-content:center;
+}
+#authBox {
+  background:var(--panel); border:4px solid var(--line); border-radius:14px;
+  padding:22px; width:90%; max-width:360px; text-align:center;
+  display:flex; flex-direction:column; gap:8px;
+  box-shadow:0 6px 0 rgba(0,0,0,.25);
+}
+.in {
+  font-family:inherit; font-size:14px; padding:8px 10px;
+  border:3px solid var(--line); border-radius:8px; background:#fff; color:var(--txt);
+}
+#authMsg { font-size:12px; min-height:16px; color:#b06a6a; }
+
+/* ---- 채팅 ---- */
+#chatFab {
+  position:fixed; right:18px; bottom:18px; width:54px; height:54px; border-radius:50%;
+  background:var(--pink); border:3px solid var(--line); font-size:24px; cursor:pointer;
+  z-index:40; display:none; box-shadow:0 3px 0 var(--line);
+}
+#chatPanel {
+  position:fixed; right:14px; bottom:82px; width:300px; max-width:calc(100vw - 28px);
+  height:380px; max-height:60vh; background:var(--panel); border:4px solid var(--line);
+  border-radius:12px; z-index:40; display:none; flex-direction:column; overflow:hidden;
+  box-shadow:0 4px 0 rgba(0,0,0,.2);
+}
+#chatHead {
+  background:var(--panel2); border-bottom:2px solid var(--line); padding:8px 10px;
+  font-size:14px; display:flex; justify-content:space-between; align-items:center;
+}
+#chatClose { cursor:pointer; padding:0 4px; }
+#chatMsgs { flex:1; overflow-y:auto; padding:8px; font-size:12px; display:flex; flex-direction:column; gap:6px; }
+.cmsg .cn { color:#c2607e; }
+.cmsg .ct { color:#a8946f; font-size:10px; margin-left:4px; }
+#chatInputRow { display:flex; gap:6px; padding:8px; border-top:2px solid var(--line); }
+#chatInput { flex:1; min-width:0; }
