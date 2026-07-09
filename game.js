@@ -70,10 +70,10 @@ const MOODS = [
   { icon:"😴", name:"졸림", desc:"훈련 -3%, 경주 -2%", train:-0.03, race:-0.02 },
 ];
 const WEATHERS = [
-  { icon:"☀️", name:"맑음", desc:"동전노점 수익 +15%", coin:1.15, carrot:1 },
+  { icon:"☀️", name:"맑음", desc:"금화노점 수익 +15%", coin:1.15, carrot:1 },
   { icon:"🌧️", name:"보슬비", desc:"당근밭 생산 +20%", coin:1, carrot:1.20 },
-  { icon:"🍃", name:"선선함", desc:"당근·코인 생산 +10%", coin:1.10, carrot:1.10 },
-  { icon:"🌈", name:"무지개", desc:"당근·코인 생산 +20%", coin:1.20, carrot:1.20 },
+  { icon:"🍃", name:"선선함", desc:"당근·금화 생산 +10%", coin:1.10, carrot:1.10 },
+  { icon:"🌈", name:"무지개", desc:"당근·금화 생산 +20%", coin:1.20, carrot:1.20 },
   { icon:"🌫️", name:"안개", desc:"평온한 날씨예요", coin:1, carrot:1 },
 ];
 const CUPS = [
@@ -85,7 +85,7 @@ const CUPS = [
 const BUILDINGS = {
   stable: { name:"🏠 마구간",   desc:l=>`말 보유 한도 ${stableCap(l)}마리`,       cost:l=>Math.floor(200*Math.pow(1.7,l-1)) },
   farm:   { name:"🥕 당근밭",   desc:l=>`분당 당근 ${farmRate(l)}개 자동 생산 (보관 ${farmCap(l)}개)`, cost:l=>Math.floor(150*Math.pow(1.6,l-1)) },
-  stall:  { name:"🪙 동전노점", desc:l=>`분당 코인 ${stallRate(l)}개 자동 수익 (보관 ${stallCap(l)}개)`, cost:l=>Math.floor(180*Math.pow(1.65,l-1)) },
+  stall:  { name:"🪙 금화노점", desc:l=>`분당 금화 ${stallRate(l)}개 자동 수익 (보관 ${stallCap(l)}개)`, cost:l=>Math.floor(180*Math.pow(1.65,l-1)) },
   barn:   { name:"💕 산실",     desc:l=>`교배 시간 ${fmtSec(breedTime(l))} · 특이개체 확률 ${mutChance(l)}%`, cost:l=>Math.floor(250*Math.pow(1.7,l-1)) },
   gym:    { name:"💪 훈련장",   desc:l=>`훈련 쿨타임 ${trainCool(l)}초 · 성공률 +${(l-1)*4}%`, cost:l=>Math.floor(250*Math.pow(1.7,l-1)) },
 };
@@ -819,10 +819,10 @@ function guidePanelHTML(){
     const s = achievementStatus(a);
     return s.done && !s.claimed;
   });
-  if(state.dailyGiftDay !== todayKey()) items.push({ title:"출석 보급품 받기", desc:"오늘 보상으로 코인과 당근을 챙겨요.", tab:"ranch", section:"summary" });
+  if(state.dailyGiftDay !== todayKey()) items.push({ title:"출석 보급품 받기", desc:"오늘 보상으로 금화와 당근을 챙겨요.", tab:"ranch", section:"summary" });
   if(claimableQuest || claimableAch) items.push({ title:"완료 보상 받기", desc:"의뢰나 업적 보상을 한 번에 받을 수 있어요.", action:"claimRewards" });
   if(fameRank().next) items.push({ title:"목장 명성 올리기", desc:"도감 발견, 컵 우승, 업적 보상으로 명성을 키워요.", tab:"race" });
-  if(state.coins < 80) items.push({ title:"코인 회복하기", desc:"일손돕기나 당근 장터로 다시 굴릴 돈을 마련해요.", tab:"ranch", section:"activity" });
+  if(state.coins < 80) items.push({ title:"금화 회복하기", desc:"목장 둘러보기나 당근 장터로 다시 굴릴 돈을 마련해요.", tab:"ranch", section:"activity" });
   if(state.carrots < TRAIN_CARROT && state.coins >= 80) items.push({ title:"당근 모으기", desc:"당근밭 생산을 기다리거나 산책에서 보상을 찾아봐요.", tab:"ranch", section:"activity" });
   if(adults.length && readyAdult && unfinishedCup) items.push({ title:`${unfinishedCup.name} 우승 도전`, desc:"컵 도장을 모으면 컵 정복자 업적이 열려요.", tab:"race" });
   if(adults.length && state.carrots >= TRAIN_CARROT) items.push({ title:"말 훈련하기", desc:"스탯과 친밀도를 올려 더 높은 컵을 노려요.", tab:"train" });
@@ -906,7 +906,7 @@ function marketPanelHTML(){
   return `<div class="market">
       <div class="market-main">
         <div class="ttl">🥕 당근 팔기</div>
-        <div class="desc">남는 당근을 코인으로 바꿔요. 급할 때 목장을 다시 굴릴 수 있어요.</div>
+        <div class="desc">남는 당근을 금화로 바꿔요. 급할 때 목장을 다시 굴릴 수 있어요.</div>
       </div>
       <div class="market-actions">
         ${trades.map(t=>`
@@ -917,59 +917,19 @@ function marketPanelHTML(){
     </div>`;
 }
 
-function chorePanelHTML(){
-  const left = coolLeft(state.choreReadyAt);
-  return `<div class="chore">
-      <div class="chore-main">
-        <div class="ttl">🧹 급할 땐 직접 벌기</div>
-        <div class="desc" id="choreDesc">${left>0 ? `다음 일감까지 ${fmtSec(left)}` : "코인이나 당근이 부족해도 할 수 있는 작은 일감이에요."}</div>
-      </div>
-      <button class="px small green" id="btnChore" ${left>0?"disabled":""}>일손돕기</button>
-    </div>`;
-}
-
-function doChore(){
-  if(coolLeft(state.choreReadyAt)>0){ toast(`다음 일감까지 ${fmtSec(coolLeft(state.choreReadyAt))}`); return; }
-  state.choreReadyAt = now() + CHORE_COOL*1000;
-  state.ranchJobs = (state.ranchJobs || 0) + 1;
-  const events = [
-    ()=>{
-      const coins = 35 + state.horses.length * 4 + ri(0, 12);
-      state.coins += coins;
-      return `마구간을 쓸고 품삯을 받았어요! 🪙+${coins}`;
-    },
-    ()=>{
-      const carrots = ri(5, 10);
-      const coins = ri(18, 30);
-      state.carrots += carrots;
-      state.coins += coins;
-      return `당근밭 김을 매고 보상을 받았어요! 🥕+${carrots} 🪙+${coins}`;
-    },
-    ()=>{
-      const coins = 45 + Math.min(40, state.trophies * 8);
-      state.coins += coins;
-      return `목장 구경 손님을 안내했어요! 🪙+${coins}`;
-    },
-  ];
-  const msg = pick(events)();
-  save();
-  toast(msg);
-  renderView();
-}
-
 function walkPanelHTML(){
   const left = coolLeft(state.walkReadyAt);
   return `<div class="walk">
       <div class="walk-main">
         <div class="ttl">🌿 목장 둘러보기</div>
-        <div class="desc" id="walkDesc">${left>0 ? `다음 산책까지 ${fmtSec(left)}` : "작은 사건과 보상을 발견할 수 있어요."}</div>
+        <div class="desc" id="walkDesc">${left>0 ? `다음 둘러보기까지 ${fmtSec(left)}` : "작은 사건, 보상, 일손돕기를 한 번에 할 수 있어요."}</div>
       </div>
-      <button class="px small green" id="btnWalk" ${left>0?"disabled":""}>산책하기</button>
+      <button class="px small green" id="btnWalk" ${left>0?"disabled":""}>둘러보기</button>
     </div>`;
 }
 
 function doRanchWalk(){
-  if(coolLeft(state.walkReadyAt)>0){ toast(`다음 산책까지 ${fmtSec(coolLeft(state.walkReadyAt))}`); return; }
+  if(coolLeft(state.walkReadyAt)>0){ toast(`다음 둘러보기까지 ${fmtSec(coolLeft(state.walkReadyAt))}`); return; }
   state.walkReadyAt = now() + WALK_COOL*1000;
   state.ranchWalks = (state.ranchWalks || 0) + 1;
   const babies = state.horses.filter(h=>!isAdult(h));
@@ -983,7 +943,27 @@ function doRanchWalk(){
     ()=>{
       const n = ri(25,55);
       state.coins += n;
-      return `낡은 편자 옆에서 반짝이는 코인을 주웠어요! 🪙+${n}`;
+      return `낡은 편자 옆에서 반짝이는 금화를 주웠어요! 🪙+${n}`;
+    },
+    ()=>{
+      const coins = 35 + state.horses.length * 4 + ri(0, 12);
+      state.coins += coins;
+      state.ranchJobs = (state.ranchJobs || 0) + 1;
+      return `마구간을 둘러보다가 청소를 돕고 품삯을 받았어요! 🪙+${coins}`;
+    },
+    ()=>{
+      const carrots = ri(5, 10);
+      const coins = ri(18, 30);
+      state.carrots += carrots;
+      state.coins += coins;
+      state.ranchJobs = (state.ranchJobs || 0) + 1;
+      return `당근밭 상태를 살피며 김을 매고 보상을 받았어요! 🥕+${carrots} 🪙+${coins}`;
+    },
+    ()=>{
+      const coins = 45 + Math.min(40, state.trophies * 8);
+      state.coins += coins;
+      state.ranchJobs = (state.ranchJobs || 0) + 1;
+      return `목장 구경 손님을 안내했어요! 🪙+${coins}`;
     },
     ()=>{
       if(!babies.length) return null;
@@ -1003,7 +983,7 @@ function doRanchWalk(){
   let msg = null;
   for(let tries=0; tries<6 && !msg; tries++) msg = pick(events)();
   save();
-  toast(msg || "상쾌하게 목장을 한 바퀴 돌았어요!");
+  toast(msg || "상쾌하게 목장을 한 바퀴 둘러봤어요!");
   renderView();
 }
 
@@ -1024,14 +1004,13 @@ function ranchSectionBadge(id){
     ensureQuests();
     ensureAchievements();
     const daily = state.dailyGiftDay !== todayKey() ? 1 : 0;
-    const chores = coolLeft(state.choreReadyAt) <= 0 ? 1 : 0;
     const walks = coolLeft(state.walkReadyAt) <= 0 ? 1 : 0;
     const quests = state.quests.items.filter(q=>q.progress >= q.target && !q.claimed).length;
     const achievements = ACHIEVEMENTS.filter(a=>{
       const s = achievementStatus(a);
       return s.done && !s.claimed;
     }).length;
-    return daily + chores + walks + quests + achievements;
+    return daily + walks + quests + achievements;
   }
   if(id === "manage"){
     return Object.entries(BUILDINGS).filter(([k,b])=>{
@@ -1057,7 +1036,7 @@ function buildingPanelHTML(){
         </div>`;
       }).join("")}
     </div>
-    <div class="hint">당근은 당근밭에서, 코인은 동전노점에서 시간이 지나면 자동으로 쌓여요.</div>`;
+    <div class="hint">당근은 당근밭에서, 금화는 금화노점에서 시간이 지나면 자동으로 쌓여요.</div>`;
 }
 
 function ranchSectionHTML(){
@@ -1065,7 +1044,6 @@ function ranchSectionHTML(){
     return `<h3 class="sec" style="margin-top:12px;">빠른 활동</h3>
       <div class="quick-grid">
         ${dailyGiftPanelHTML()}
-        ${chorePanelHTML()}
         ${walkPanelHTML()}
         ${marketPanelHTML()}
       </div>
@@ -1114,7 +1092,7 @@ function renderRanch(v){
     btn.onclick = ()=>{
       const k = btn.dataset.up, lv = state.buildings[k];
       const cost = BUILDINGS[k].cost(lv);
-      if(!spendCoins(cost)){ toast("코인이 부족해요!"); return; }
+      if(!spendCoins(cost)){ toast("금화가 부족해요!"); return; }
       state.buildings[k]++;
       if(k==="farm") state.carrotStamp = now();
       if(k==="stall") state.coinStamp = now();
@@ -1206,14 +1184,12 @@ function renderRanch(v){
   });
   const walkBtn = $("#btnWalk");
   if(walkBtn) walkBtn.onclick = doRanchWalk;
-  const choreBtn = $("#btnChore");
-  if(choreBtn) choreBtn.onclick = doChore;
   $("#btnDex").onclick = openDexModal;
   $("#btnHelp").onclick = openHelpModal;
   $("#btnBackup").onclick = openBackupModal;
   $("#btnAdopt").onclick = ()=>{
     if(state.horses.length >= stableCap(state.buildings.stable)){ toast("마구간이 꽉 찼어요!"); return; }
-    if(!spendCoins(ADOPT_COST)){ toast("코인이 부족해요!"); return; }
+    if(!spendCoins(ADOPT_COST)){ toast("금화가 부족해요!"); return; }
     const h = newHorse(pick(NORMAL_BREEDS), "adult", [4,10]);
     state.horses.push(h); markDex(h); save();
     toast(`${h.name}(${BREEDS[h.breed].name})가 목장에 왔어요!`);
@@ -1498,7 +1474,7 @@ function renderBreed(v){
   });
   const bb = $("#btnBreed");
   if(bb) bb.onclick = ()=>{
-    if(!spendCoins(BREED_COST)){ toast("코인이 부족해요!"); return; }
+    if(!spendCoins(BREED_COST)){ toast("금화가 부족해요!"); return; }
     state.breeding = {
       motherId:fH.id, fatherId:mH.id,
       motherName:fH.name, fatherName:mH.name,
@@ -1547,6 +1523,7 @@ function doBirth(){
    경주 탭
    ===================================================== */
 let raceRunning = false, raceStarting = false, raceSel = null, raceMode = null;
+const PVP_MIN_PLAYERS = 3;
 
 function cupDifficulty(cup, h){
   if(!h) return "";
@@ -1620,7 +1597,7 @@ function startCupRace(cup){
   if(raceRunning || raceStarting){ toast("이미 경주 준비 중이에요!"); return; }
   const h = findHorse(raceSel);
   if(!h){ toast("출전할 말을 골라주세요!"); return; }
-  if(!spendCoins(cup.fee)){ toast("코인이 부족해요!"); return; }
+  if(!spendCoins(cup.fee)){ toast("금화가 부족해요!"); return; }
   raceStarting = true;
   const mood = moodOf(h);
   const entrants = [{ name:h.name, breed:h.breed, stats:h.stats, mine:true, treat:hasTreat(h), trait:h.trait, bond:h.bond || 0, moodRace:mood.race || 0 }];
@@ -1667,12 +1644,45 @@ function sanitizeRivalHorse(p){
     return { name: nick, breed, stats: st, trait, bond, rival: true };
   } catch(e){ return null; }
 }
+
+function showPvpMatchModal(count=1, msg="실제 이웃 목장주를 찾고 있어요…"){
+  showModal(`<h2>🏆 대항전 매칭 중</h2>
+    <p class="hint">실제 목장주가 ${PVP_MIN_PLAYERS}명 이상 모이면 경주가 시작돼요.</p>
+    <div style="font-size:22px;color:#c2607e;margin:10px 0;" id="pvpMatchCount">${count}/${PVP_MIN_PLAYERS}명</div>
+    <div id="pvpMatchMsg" style="font-size:13px;color:#80664b;min-height:18px;">${msg}</div>
+    <div id="pvpMatchActions" style="margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+      <button class="px" id="pvpMatchCancel">취소</button>
+    </div>`);
+  $("#pvpMatchCancel").onclick = ()=>{
+    raceStarting = false;
+    closeModal();
+  };
+}
+
+function updatePvpMatchModal(count, msg, ready=false){
+  const countEl = $("#pvpMatchCount");
+  const msgEl = $("#pvpMatchMsg");
+  const actions = $("#pvpMatchActions");
+  if(countEl) countEl.textContent = `${count}/${PVP_MIN_PLAYERS}명`;
+  if(msgEl) msgEl.textContent = msg;
+  if(actions){
+    actions.innerHTML = ready
+      ? `<button class="px pink" disabled>곧 출발!</button>`
+      : `<button class="px pink" id="pvpRetry">다시 매칭</button><button class="px" id="pvpClose">닫기</button>`;
+    const retry = $("#pvpRetry");
+    if(retry) retry.onclick = ()=>startPvpRace();
+    const close = $("#pvpClose");
+    if(close) close.onclick = closeModal;
+  }
+}
+
 async function startPvpRace(){
   if(raceRunning || raceStarting){ toast("이미 경주 준비 중이에요!"); return; }
   const h = findHorse(raceSel);
   if(!h) return;
   if(!me || !sb){ toast("로그인하면 실제 이웃 목장주와 대전할 수 있어요!"); return; }
   raceStarting = true;
+  showPvpMatchModal(1);
   const mood = moodOf(h);
   const entrants = [{ name:h.name, breed:h.breed, stats:h.stats, mine:true, treat:hasTreat(h), trait:h.trait, bond:h.bond || 0, moodRace:mood.race || 0 }];
   let realCount = 0;
@@ -1681,38 +1691,48 @@ async function startPvpRace(){
       .select("nickname,best_horse").neq("id", me.id).not("best_horse","is",null)
       .order("updated_at", { ascending:false }).limit(30);
     warnSetup(error);
-    if(error){ toast("이웃 목장 정보를 불러오지 못했어요"); return; }
+    if(error){
+      updatePvpMatchModal(1, "이웃 목장 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.");
+      raceStarting = false;
+      return;
+    }
     const pool = (data || []).sort(()=>Math.random()-0.5).slice(0, 5);
     for(const p of pool){
       const e = sanitizeRivalHorse(p);
       if(e){ entrants.push(e); realCount++; }
     }
   } catch(e){
-    toast("이웃 목장 정보를 불러오지 못했어요");
-    return;
-  } finally {
+    updatePvpMatchModal(1, "이웃 목장 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.");
     raceStarting = false;
-  }
-  if(realCount < 1){
-    toast("아직 대전할 실제 이웃 목장주가 없어요");
     return;
   }
-  const title = `🏆 목장 대항전 — 이웃 목장주 ${realCount}명 참전!`;
-  runRace(entrants, title, (ranks, meta)=>{
-    const myRank = ranks.findIndex(e=>e.mine) + 1;
-    const win = myRank === 1;
-    state.coins += win ? 100 : 20;
-    if(win) state.trophies++;
-    h.races++; if(win) h.wins++;
-    addBond(h, win ? 7 : 4);
-    h.coolRace = now() + RACE_COOL*1000;
-    addQuestProgress("race");
-    save();
-    if(me) pushCloudNow();
-    showRaceResult(ranks, myRank, win
-      ? `이웃 목장들을 꺾었어요! 🏆+1, 🪙100 획득!`
-      : `${myRank}등… 이웃들이 강했어요. 위로금 🪙20`, raceBonusSummary(h, meta));
-  });
+  if(entrants.length < PVP_MIN_PLAYERS){
+    raceStarting = false;
+    updatePvpMatchModal(entrants.length, `아직 ${PVP_MIN_PLAYERS - entrants.length}명이 더 필요해요. 실제 유저가 더 저장되면 시작할 수 있어요.`);
+    return;
+  }
+  updatePvpMatchModal(entrants.length, "3명 이상 모였어요. 곧 출발합니다!", true);
+  setTimeout(()=>{
+    if(!raceStarting) return;
+    closeModal();
+    const title = `🏆 목장 대항전 — 목장주 ${entrants.length}명 참전!`;
+    runRace(entrants, title, (ranks, meta)=>{
+      const myRank = ranks.findIndex(e=>e.mine) + 1;
+      const win = myRank === 1;
+      state.coins += win ? 100 : 20;
+      if(win) state.trophies++;
+      h.races++; if(win) h.wins++;
+      addBond(h, win ? 7 : 4);
+      h.coolRace = now() + RACE_COOL*1000;
+      addQuestProgress("race");
+      save();
+      if(me) pushCloudNow();
+      showRaceResult(ranks, myRank, win
+        ? `이웃 목장들을 꺾었어요! 🏆+1, 🪙100 획득!`
+        : `${myRank}등… 이웃들이 강했어요. 위로금 🪙20`, raceBonusSummary(h, meta));
+    });
+    raceStarting = false;
+  }, 900);
 }
 
 function raceBonusSummary(h, meta={}){
@@ -1872,13 +1892,8 @@ setInterval(()=>{
   // 카운트다운이 있는 화면은 1초마다 다시 그림
   if(curTab==="ranch" && $("#btnWalk")){
     const left = coolLeft(state.walkReadyAt);
-    $("#walkDesc").textContent = left>0 ? `다음 산책까지 ${fmtSec(left)}` : "작은 사건과 보상을 발견할 수 있어요.";
+    $("#walkDesc").textContent = left>0 ? `다음 둘러보기까지 ${fmtSec(left)}` : "작은 사건, 보상, 일손돕기를 한 번에 할 수 있어요.";
     $("#btnWalk").disabled = left>0;
-    const choreLeft = coolLeft(state.choreReadyAt);
-    if($("#btnChore")){
-      $("#choreDesc").textContent = choreLeft>0 ? `다음 일감까지 ${fmtSec(choreLeft)}` : "코인이나 당근이 부족해도 할 수 있는 작은 일감이에요.";
-      $("#btnChore").disabled = choreLeft>0;
-    }
   }
   else if(curTab==="breed" && state.breeding) renderView();
   else if(curTab==="train"){
@@ -2003,11 +2018,13 @@ $("#rUser").onclick = ()=>{
     <p class="hint">진행 상황은 클라우드에 저장되어 있어요.<br>다시 로그인하면 이어서 할 수 있어요.</p>
     <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
       <button class="px" id="mBackup">저장 백업</button>
+      <button class="px" id="mRenameOwner">이름 변경</button>
       <button class="px" id="mResetAccount" style="background:#cfc4ab;">데이터 초기화</button>
       <button class="px" id="mLogout">로그아웃</button>
       <button class="px pink" onclick="closeModal()">취소</button>
     </div>`);
   $("#mBackup").onclick = openBackupModal;
+  $("#mRenameOwner").onclick = openRenameOwnerModal;
   $("#mResetAccount").onclick = openResetAccountModal;
   $("#mLogout").onclick = async ()=>{
     await pushCloudNow();
@@ -2017,9 +2034,45 @@ $("#rUser").onclick = ()=>{
   };
 };
 
+function openRenameOwnerModal(){
+  if(!me || !sb){ toast("로그인 후 사용할 수 있어요"); return; }
+  showModal(`<h2>목장주 이름 변경</h2>
+    <p class="hint">채팅과 목장 대항전에서 보여질 이름이에요. (1~12자)</p>
+    <input class="in" id="ownerNickIn" maxlength="12" style="width:100%;margin:8px 0;">
+    <div id="ownerNickMsg" style="font-size:12px;color:#b06a6a;min-height:14px;"></div>
+    <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+      <button class="px pink" id="ownerNickOk">변경</button>
+      <button class="px" onclick="closeModal()">취소</button>
+    </div>`);
+  $("#ownerNickIn").value = myNickname || "목장주";
+  $("#ownerNickIn").focus();
+  $("#ownerNickIn").select();
+  $("#ownerNickOk").onclick = async ()=>{
+    const input = $("#ownerNickIn");
+    const msg = $("#ownerNickMsg");
+    const btn = $("#ownerNickOk");
+    const v = input.value.trim();
+    if(!v || v.length > 12){ msg.textContent = "이름은 1~12자로 입력해주세요"; return; }
+    btn.disabled = true;
+    msg.textContent = "저장 중…";
+    const { error } = await sb.from("mmr_profiles")
+      .upsert({ id: me.id, nickname: v, trophies: state.trophies, best_horse: bestHorseSnapshot(), updated_at: new Date().toISOString() });
+    warnSetup(error);
+    if(error){
+      btn.disabled = false;
+      msg.textContent = "저장에 실패했어요 — 다시 시도해주세요";
+      return;
+    }
+    myNickname = v;
+    renderHeaderAccount();
+    closeModal();
+    toast(`목장주 이름을 ${v}(으)로 바꿨어요!`);
+  };
+}
+
 function openResetAccountModal(){
   showModal(`<h2>계정 데이터 초기화</h2>
-    <p class="hint">로그인 계정과 목장주 이름은 유지하고, 말·코인·건물·의뢰·업적·클라우드 저장을 새 목장 상태로 되돌려요.<br>되돌릴 수 없으니 필요하면 먼저 저장 백업을 해주세요.</p>
+    <p class="hint">로그인 계정과 목장주 이름은 유지하고, 말·금화·건물·의뢰·업적·클라우드 저장을 새 목장 상태로 되돌려요.<br>되돌릴 수 없으니 필요하면 먼저 저장 백업을 해주세요.</p>
     <div id="resetMsg" style="font-size:12px;color:#b06a6a;min-height:14px;margin-top:8px;"></div>
     <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
       <button class="px" id="mResetYes">초기화</button>
