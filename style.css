@@ -1,8 +1,3 @@
-@font-face {
-  font-family: 'DungGeunMo';
-  src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.3/DungGeunMo.woff') format('woff');
-  font-weight: normal; font-display: swap;
-}
 * { margin:0; padding:0; box-sizing:border-box; }
 :root {
   --bg:#bfe3b4; --panel:#fdf6e3; --panel2:#f3e7c9; --line:#8a6d4b;
@@ -10,7 +5,7 @@
   --gold:#f0c245; --red:#e07a7a; --txt:#4a3826;
 }
 body {
-  font-family:'DungGeunMo','Galmuri11',monospace;
+  font-family:'DungGeunMo','Galmuri11','Malgun Gothic','Apple SD Gothic Neo',monospace;
   background:var(--bg); color:var(--txt);
   image-rendering:pixelated;
   min-height:100vh; padding-bottom:30px;
@@ -99,17 +94,114 @@ button.px.small { font-size:12px; padding:4px 8px; }
 /* ---- 목장 ---- */
 #ranchCanvasWrap { border:4px solid var(--line); border-radius:10px; overflow:hidden; background:#a8d69a; margin-bottom:10px; }
 #ranchCanvas { display:block; width:100%; }
+.ranch-switch {
+  position:sticky; top:8px; z-index:20;
+  display:flex; gap:6px; flex-wrap:wrap; margin:4px 0 12px; padding:6px 0;
+  background:var(--panel); border-bottom:2px dashed rgba(138,109,75,.55);
+}
+.ranch-switch .px { min-width:64px; }
+.ranch-badge {
+  display:inline-block; min-width:16px; padding:1px 4px; margin-left:3px;
+  border-radius:8px; background:#fff4cf; color:#4a3826; font-size:10px;
+}
 .bld-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:8px; }
 .bld {
   background:var(--panel2); border:3px solid var(--line); border-radius:10px; padding:10px;
 }
 .bld .ttl { font-size:15px; }
 .bld .desc { font-size:12px; color:#8a7357; margin:4px 0 8px; min-height:30px; }
+.dex-grid { display:grid; gap:6px; max-height:55vh; overflow:auto; text-align:left; }
+.dex-row { background:var(--panel2); border:2px solid var(--line); border-radius:8px; padding:7px 9px; }
+.dex-name { font-size:13px; margin-bottom:4px; }
+.dex-coats { display:flex; flex-wrap:wrap; gap:4px; }
+.dex-coat { font-size:11px; color:#9b8c72; background:#d8ccb0; border-radius:5px; padding:2px 5px; }
+.dex-coat.got { color:var(--txt); background:#f7dc8a; }
+.quest-grid, .ach-grid { display:grid; gap:6px; margin-bottom:12px; }
+.fold-panel {
+  background:var(--panel2); border:3px solid var(--line); border-radius:10px;
+  padding:0; margin:12px 0;
+}
+.fold-panel summary {
+  cursor:pointer; list-style:none; padding:10px;
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  font-size:15px;
+}
+.fold-panel summary::-webkit-details-marker { display:none; }
+.fold-panel summary::before { content:"▶"; font-size:11px; margin-right:3px; }
+.fold-panel[open] summary::before { content:"▼"; }
+.fold-panel .quest-grid, .fold-panel .ach-grid { padding:0 8px 8px; margin-bottom:0; }
+.fold-meta { font-size:12px; color:#8a7357; }
+.quest, .ach {
+  background:var(--panel2); border:3px solid var(--line); border-radius:10px; padding:8px;
+  display:flex; align-items:center; gap:8px;
+}
+.quest.done, .ach.done { background:#fde8ef; }
+.quest-main, .ach-main { flex:1; }
+.quest .ttl, .ach .ttl { font-size:14px; }
+.quest .desc, .ach .desc { font-size:12px; color:#8a7357; margin-top:3px; }
+.daily {
+  background:#fff1b8; border:3px solid var(--line); border-radius:10px; padding:10px;
+  display:flex; align-items:center; gap:10px; margin-bottom:12px;
+}
+.daily.claimed { background:var(--panel2); }
+.daily-main { flex:1; }
+.daily .ttl { font-size:15px; }
+.daily .desc { font-size:12px; color:#8a7357; margin-top:3px; }
+.weather {
+  background:#e8f6ff; border:3px solid var(--line); border-radius:10px; padding:10px;
+  display:flex; align-items:center; gap:10px; margin-bottom:12px;
+}
+.weather-icon { font-size:24px; width:34px; text-align:center; }
+.weather-main { flex:1; }
+.weather .ttl { font-size:15px; }
+.weather .desc { font-size:12px; color:#8a7357; margin-top:3px; }
+.fame {
+  background:#fff4cf; border:3px solid var(--line); border-radius:10px; padding:10px;
+  display:flex; align-items:center; gap:10px; margin-bottom:12px;
+}
+.fame-icon { font-size:24px; width:34px; text-align:center; }
+.fame-main { flex:1; }
+.fame .ttl { font-size:15px; }
+.fame .desc { font-size:12px; color:#8a7357; margin-top:3px; }
+.spotlight {
+  background:#fde8ef; border:3px solid var(--line); border-radius:10px; padding:10px;
+  display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap;
+}
+.spotlight-spr { width:66px; display:flex; justify-content:center; }
+.spotlight-main { flex:1; min-width:180px; }
+.spotlight .ttl { font-size:15px; }
+.spotlight .desc { font-size:12px; color:#8a7357; margin-top:3px; }
+.spotlight-actions { display:flex; gap:6px; flex-wrap:wrap; }
+.guide { display:grid; gap:6px; margin-bottom:12px; }
+.guide-item {
+  background:#f6efd8; border:3px solid var(--line); border-radius:10px; padding:8px;
+  display:flex; align-items:center; gap:8px;
+}
+.guide-main { flex:1; min-width:180px; }
+.guide .ttl { font-size:14px; }
+.guide .desc { font-size:12px; color:#8a7357; margin-top:3px; }
+.quick-grid {
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+  gap:8px; margin-bottom:12px;
+}
+.market, .walk, .chore {
+  background:var(--panel2); border:3px solid var(--line); border-radius:10px; padding:10px;
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+}
+.quick-grid .daily { margin-bottom:0; }
+.market-main, .walk-main, .chore-main { flex:1; min-width:180px; }
+.market .ttl, .walk .ttl, .chore .ttl { font-size:15px; }
+.market .desc, .walk .desc, .chore .desc { font-size:12px; color:#8a7357; margin-top:3px; }
+.market-actions { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; width:100%; }
 
 /* ---- 경주 ---- */
 #raceWrap { display:none; }
 #raceCanvas { display:block; width:100%; border:4px solid var(--line); border-radius:10px; background:#9fd18f; }
 #raceRank { font-size:13px; margin-top:6px; min-height:20px; }
+.race-controls {
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  margin-top:6px; font-size:12px; color:#8a7357;
+}
 .cup {
   background:var(--panel2); border:3px solid var(--line); border-radius:10px; padding:10px;
   display:flex; align-items:center; gap:10px; margin-bottom:8px;
@@ -117,6 +209,10 @@ button.px.small { font-size:12px; padding:4px 8px; }
 .cup .info { flex:1; }
 .cup .ttl { font-size:15px; }
 .cup .desc { font-size:12px; color:#8a7357; }
+.race-detail {
+  background:#fff4cf; border:2px solid var(--line); border-radius:8px;
+  padding:7px 10px; font-size:12px; color:#8a7357; margin-bottom:10px; text-align:left;
+}
 
 /* ---- 교배 ---- */
 .pair-box { display:flex; gap:10px; align-items:stretch; margin-bottom:10px; flex-wrap:wrap; }
@@ -138,6 +234,10 @@ button.px.small { font-size:12px; padding:4px 8px; }
   box-shadow:0 6px 0 rgba(0,0,0,.25);
 }
 #modal h2 { font-size:20px; margin-bottom:10px; }
+.help-list { display:grid; gap:8px; text-align:left; font-size:12px; }
+.help-list > div {
+  background:var(--panel2); border:2px solid var(--line); border-radius:8px; padding:8px;
+}
 #toasts { position:fixed; left:50%; bottom:20px; transform:translateX(-50%); z-index:60; }
 .toast {
   background:var(--brown); color:#fff; font-size:13px; padding:8px 16px;
@@ -166,6 +266,11 @@ button.px.small { font-size:12px; padding:4px 8px; }
   font-family:inherit; font-size:14px; padding:8px 10px;
   border:3px solid var(--line); border-radius:8px; background:#fff; color:var(--txt);
 }
+.backup-text {
+  width:100%; min-height:190px; resize:vertical; font-family:monospace; font-size:11px;
+  border:3px solid var(--line); border-radius:8px; padding:8px; background:#fff; color:var(--txt);
+}
+.backup-actions { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:10px; }
 #authMsg { font-size:12px; min-height:16px; color:#b06a6a; }
 
 /* ---- 채팅 ---- */
