@@ -920,14 +920,20 @@ async function pushCloudNow(){
 window.addEventListener("beforeunload", ()=>{ if(cloudTimer) pushCloudNow(); });
 
 /* --- 인증 --- */
-function authErrKo(msg){
-  msg = String(msg || "");
-  if(msg.includes("Invalid login credentials")) return "이메일 또는 비밀번호가 맞지 않아요";
-  if(msg.includes("Email not confirmed")) return "가입 확인 메일의 링크를 먼저 눌러주세요";
-  if(msg.includes("already registered")) return "이미 가입된 이메일이에요";
-  if(msg.includes("at least 6 characters")) return "비밀번호는 6자 이상이어야 해요";
-  if(msg.includes("valid email")) return "올바른 이메일 주소를 입력해주세요";
-  if(msg.includes("rate limit") || msg.includes("Too many")) return "요청이 너무 잦아요 — 잠시 후 다시 시도해주세요";
+function authErrKo(error){
+  const msg = String(error?.message || error || "");
+  const code = String(error?.code || "");
+  if(code === "invalid_credentials" || msg.includes("Invalid login credentials")) return "이메일 또는 비밀번호가 맞지 않아요";
+  if(code === "email_not_confirmed" || msg.includes("Email not confirmed")) return "가입 확인 메일의 링크를 먼저 눌러주세요";
+  if(code === "email_exists" || msg.includes("already registered")) return "이미 가입된 이메일이에요";
+  if(code === "weak_password" || msg.includes("at least 6 characters")) return "비밀번호는 6자 이상이어야 해요";
+  if(code === "validation_failed" || msg.includes("valid email")) return "올바른 이메일 주소를 입력해주세요";
+  if(code === "over_email_send_rate_limit" || msg.includes("email rate limit")) {
+    return "확인 메일 발송 한도에 걸렸어요. 기본 메일은 시간당 2통이라 1시간 뒤 다시 시도해주세요";
+  }
+  if(code === "over_request_rate_limit" || msg.includes("rate limit") || msg.includes("Too many")) {
+    return "요청이 잠시 제한됐어요 — 몇 분 뒤 다시 시도해주세요";
+  }
   return "실패했어요: " + msg;
 }
 function showAuthOverlay(){ $("#authBg").style.display = "flex"; $("#authMsg").textContent = ""; }
@@ -1018,7 +1024,7 @@ async function initAuth(){
     if(!email || !pw){ $("#authMsg").textContent = "이메일과 비밀번호를 입력해주세요"; return; }
     $("#authMsg").textContent = "로그인 중…";
     const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
-    if(error){ $("#authMsg").textContent = authErrKo(error.message); return; }
+    if(error){ $("#authMsg").textContent = authErrKo(error); return; }
     await onLogin(data.user);
   };
   $("#btnSignup").onclick = async ()=>{
@@ -1026,7 +1032,7 @@ async function initAuth(){
     if(!email || !pw){ $("#authMsg").textContent = "이메일과 비밀번호를 입력해주세요"; return; }
     $("#authMsg").textContent = "가입 중…";
     const { data, error } = await sb.auth.signUp({ email, password: pw });
-    if(error){ $("#authMsg").textContent = authErrKo(error.message); return; }
+    if(error){ $("#authMsg").textContent = authErrKo(error); return; }
     if(data.session){ await onLogin(data.user); return; }
     $("#authMsg").textContent = "📧 확인 메일을 보냈어요! 메일의 링크를 누른 뒤 로그인해주세요";
   };
