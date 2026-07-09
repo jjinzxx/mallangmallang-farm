@@ -2056,11 +2056,12 @@ function openRenameOwnerModal(){
     btn.disabled = true;
     msg.textContent = "저장 중…";
     const { error } = await sb.from("mmr_profiles")
-      .upsert({ id: me.id, nickname: v, trophies: state.trophies, best_horse: bestHorseSnapshot(), updated_at: new Date().toISOString() });
+      .upsert({ id: me.id, nickname: v }, { onConflict: "id" });
     warnSetup(error);
     if(error){
+      console.warn("Owner nickname update failed", { code:error.code, message:error.message, details:error.details, hint:error.hint });
       btn.disabled = false;
-      msg.textContent = "저장에 실패했어요 — 다시 시도해주세요";
+      msg.textContent = `저장에 실패했어요${error.code ? ` (${error.code})` : ""}`;
       return;
     }
     myNickname = v;
