@@ -114,8 +114,11 @@ button.px.small { font-size:12px; padding:4px 8px; }
 .dex-row { background:var(--panel2); border:2px solid var(--line); border-radius:8px; padding:7px 9px; }
 .dex-name { font-size:13px; margin-bottom:4px; }
 .dex-coats { display:flex; flex-wrap:wrap; gap:4px; }
-.dex-coat { font-size:11px; color:#9b8c72; background:#d8ccb0; border-radius:5px; padding:2px 5px; }
+.dex-coat { display:inline-flex; align-items:center; gap:4px; font-size:11px; color:#9b8c72; background:#d8ccb0; border-radius:5px; padding:2px 6px 2px 4px; }
 .dex-coat.got { color:var(--txt); background:#f7dc8a; }
+.dex-chip { width:14px; height:14px; border-radius:4px; border:2px solid #b3a078; position:relative; overflow:hidden; flex:0 0 auto; }
+.dex-chip > i { position:absolute; right:0; top:0; bottom:0; width:5px; }
+.dex-chip.locked { background:#c3b596; border-color:#b3a078; }
 .quest-grid, .ach-grid { display:grid; gap:6px; margin-bottom:12px; }
 .fold-panel {
   background:var(--panel2); border:3px solid var(--line); border-radius:10px;

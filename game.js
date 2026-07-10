@@ -80,6 +80,10 @@ const CUPS = [
   { id:0, name:"🌱 새싹컵",   fee:20,  prize:[80,40,25],   npc:[3,9]   },
   { id:1, name:"☁️ 구름컵",   fee:60,  prize:[250,120,70], npc:[8,17]  },
   { id:2, name:"🌈 무지개컵", fee:150, prize:[700,300,160],npc:[14,25] },
+  { id:3, name:"🌇 노을컵",   fee:260, prize:[1100,480,260], npc:[18,26] },
+  { id:4, name:"🌙 달빛컵",   fee:420, prize:[1800,760,420], npc:[20,29] },
+  { id:5, name:"⭐ 별빛컵",   fee:650, prize:[2800,1200,650],npc:[22,31] },
+  { id:6, name:"👑 왕관컵",   fee:900, prize:[4200,1800,950],npc:[24,33] },
 ];
 
 const BUILDINGS = {
@@ -89,15 +93,15 @@ const BUILDINGS = {
   barn:   { name:"💕 산실",     desc:l=>`교배 시간 ${fmtSec(breedTime(l))} · 특이개체 확률 ${mutChance(l)}%`, cost:l=>Math.floor(250*Math.pow(1.7,l-1)) },
   gym:    { name:"💪 훈련장",   desc:l=>`훈련 쿨타임 ${trainCool(l)}초 · 성공률 +${(l-1)*4}%`, cost:l=>Math.floor(250*Math.pow(1.7,l-1)) },
 };
-const MAX_BLD = 5;
+const MAX_BLD = 10;
 function stableCap(l){ return 4 + (l-1)*2; }
 function farmRate(l){ return 3 + l; }
 function farmCap(l){ return 40 + l*20; }
 function stallRate(l){ return 4 + l*2; }
 function stallCap(l){ return 80 + l*40; }
-function breedTime(l){ return Math.max(40, 120 - (l-1)*20); }   // 초
+function breedTime(l){ return l<=5 ? 120-(l-1)*20 : Math.max(20, 40-(l-5)*5); } // 초
 function mutChance(l){ return 5 + (l-1)*3; }                     // %
-function trainCool(l){ return Math.max(12, 30 - (l-1)*4); }      // 초
+function trainCool(l){ return Math.max(6, 30 - (l-1)*4); }       // 초
 
 const STAT_CAP_NORMAL = 25, STAT_CAP_SPECIAL = 30;
 const TRAIN_CARROT = 3, CARE_CARROT = 2, SNACK_CARROT = 5, BREED_COST = 100, ADOPT_COST = 150;
@@ -567,7 +571,7 @@ function renderHeader(){
 let curTab = "ranch";
 document.querySelectorAll(".tab").forEach(el=>{
   el.onclick = ()=>{
-    if(raceRunning){ toast("경주가 끝난 뒤에 이동할 수 있어요!"); return; }
+    if(raceRunning || raceStarting){ toast("매칭이나 경주가 끝난 뒤에 이동할 수 있어요!"); return; }
     curTab = el.dataset.tab;
     document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on", t===el));
     renderView();
@@ -720,7 +724,10 @@ function openDexModal(){
           <div class="dex-coats">
             ${b.coats.map((coat,i)=>{
               const got = seen[breed + ":" + i];
-              return `<span class="dex-coat ${got?"got":""}" title="${esc(coat.n)}">${got ? esc(coat.n) : "???"}</span>`;
+              const swatch = got
+                ? `<span class="dex-chip" style="background:${coat.b};border-color:${coat.m};"><i style="background:${coat.m};"></i></span>${esc(coat.n)}`
+                : `<span class="dex-chip locked"></span>???`;
+              return `<span class="dex-coat ${got?"got":""}" title="${esc(coat.n)}">${swatch}</span>`;
             }).join("")}
           </div>
         </div>`).join("")}
@@ -1299,6 +1306,26 @@ function trainHorseStat(h, k){
   renderView();
 }
 
+function openReleaseHorse(h){
+  if(state.horses.length <= 1){ toast("마지막 말은 떠나보낼 수 없어요!"); return; }
+  const reward = isAdult(h) ? 40 : 20;
+  showModal(`<h2>정말 떠나보낼까요?</h2>
+    <p>${esc(withJosa(h.name, "이", "가"))} 좋은 새 목장을 찾아 떠나요.<br>작별 선물로 🪙${reward}을 남겨줘요.</p>
+    <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;">
+      <button class="px" id="mYes">보내주기</button>
+      <button class="px pink" onclick="closeModal()">안 보낼래</button>
+    </div>`);
+  $("#mYes").onclick = ()=>{
+    state.horses = state.horses.filter(x=>x.id!==h.id);
+    state.coins += reward;
+    forgetHorseSelection(h.id);
+    save();
+    closeModal();
+    toast(`${withJosa(h.name, "이", "가")} 새 목장을 향해 떠났어요.`);
+    renderView();
+  };
+}
+
 function renderTrainDetail(el, h){
   const cool = coolLeft(h.coolTrain);
   const gymLv = state.buildings.gym;
@@ -1320,9 +1347,11 @@ function renderTrainDetail(el, h){
           🥕${CARE_CARROT} 돌봐주기
         </button>
         <button class="px small" id="btnRenameBaby">이름 바꾸기</button>
+        <button class="px small" id="btnReleaseBaby" style="background:#cfc4ab;">떠나보내기 (+🪙20)</button>
         ${cool>0?`<span class="cool"> 휴식 중… ${fmtSec(cool)}</span>`:""}
       </div>`;
     $("#btnRenameBaby").onclick = ()=>openRenameHorse(h);
+    $("#btnReleaseBaby").onclick = ()=>openReleaseHorse(h);
     const btn = $("#btnCare");
     if(btn) btn.onclick = ()=>{
       if(!spendCarrots(CARE_CARROT)){ toast("당근이 부족해요!"); return; }
@@ -1391,22 +1420,7 @@ function renderTrainDetail(el, h){
       trainHorseStat(h, btn.dataset.tr);
     };
   });
-  $("#btnRelease").onclick = ()=>{
-    if(state.horses.length <= 1){ toast("마지막 말은 떠나보낼 수 없어요!"); return; }
-    showModal(`<h2>정말 떠나보낼까요?</h2>
-      <p>${esc(withJosa(h.name, "이", "가"))} 넓은 초원으로 떠나요.<br>감사의 선물로 🪙40을 남겨줘요.</p>
-      <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;">
-        <button class="px" id="mYes">보내주기</button>
-        <button class="px pink" onclick="closeModal()">안 보낼래</button>
-      </div>`);
-    $("#mYes").onclick = ()=>{
-      state.horses = state.horses.filter(x=>x.id!==h.id);
-      state.coins += 40;
-      forgetHorseSelection(h.id);
-      save(); closeModal(); toast(`${withJosa(h.name, "이", "가")} 손을… 발굽을 흔들며 떠났어요.`);
-      renderView();
-    };
-  };
+  $("#btnRelease").onclick = ()=>openReleaseHorse(h);
 }
 
 /* =====================================================
@@ -1523,7 +1537,9 @@ function doBirth(){
    경주 탭
    ===================================================== */
 let raceRunning = false, raceStarting = false, raceSel = null, raceMode = null;
+let pvpChannel = null, pvpMatchToken = 0, pvpMatchLocked = false;
 const PVP_MIN_PLAYERS = 3;
+const PVP_QUEUE_TOPIC = "mmr-pvp-queue-v2";
 
 function cupDifficulty(cup, h){
   if(!h) return "";
@@ -1561,7 +1577,7 @@ function renderRace(v){
     <h3 class="sec" style="margin-top:14px;">이웃 목장 대전 (PvP)</h3>
     <div class="cup">
       <div class="info"><div class="ttl">🏆 목장 대항전</div>
-      <div class="desc">실제 이웃 목장주들의 대표 말과 대결 · 승리 시 🏆1 + 🪙100 (패배 🪙20)</div></div>
+      <div class="desc">지금 도전을 누른 실제 목장주 3명 이상이 모이면 시작 · 승리 시 🏆1 + 🪙100 (패배 🪙20)</div></div>
       <button class="px blue" id="btnPvp" ${!h||coolLeft(h.coolRace)>0||!me?"disabled":""}>${me?"도전!":"로그인 필요"}</button>
     </div>
     <div class="hint">경주는 운이 크게 작용해요. 스탯이 낮아도 그날 컨디션이 좋으면 이길 수 있답니다!</div>
@@ -1647,33 +1663,66 @@ function sanitizeRivalHorse(p){
 
 function showPvpMatchModal(count=1, msg="실제 이웃 목장주를 찾고 있어요…"){
   showModal(`<h2>🏆 대항전 매칭 중</h2>
-    <p class="hint">실제 목장주가 ${PVP_MIN_PLAYERS}명 이상 모이면 경주가 시작돼요.</p>
-    <div style="font-size:22px;color:#c2607e;margin:10px 0;" id="pvpMatchCount">${count}/${PVP_MIN_PLAYERS}명</div>
+    <p class="hint">지금 도전을 누른 서로 다른 목장주가 ${PVP_MIN_PLAYERS}명 이상 모이면 시작돼요.</p>
+    <div style="font-size:22px;color:#c2607e;margin:10px 0;" id="pvpMatchCount">참가자 ${count}/${PVP_MIN_PLAYERS}명</div>
+    <div style="font-size:12px;color:#80664b;margin-top:-6px;">나 포함</div>
     <div id="pvpMatchMsg" style="font-size:13px;color:#80664b;min-height:18px;">${msg}</div>
     <div id="pvpMatchActions" style="margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
       <button class="px" id="pvpMatchCancel">취소</button>
     </div>`);
-  $("#pvpMatchCancel").onclick = ()=>{
-    raceStarting = false;
-    closeModal();
-  };
+  $("#pvpMatchCancel").onclick = cancelPvpMatch;
 }
 
 function updatePvpMatchModal(count, msg, ready=false){
   const countEl = $("#pvpMatchCount");
   const msgEl = $("#pvpMatchMsg");
   const actions = $("#pvpMatchActions");
-  if(countEl) countEl.textContent = `${count}/${PVP_MIN_PLAYERS}명`;
+  if(countEl) countEl.textContent = `참가자 ${count}/${PVP_MIN_PLAYERS}명`;
   if(msgEl) msgEl.textContent = msg;
   if(actions){
     actions.innerHTML = ready
       ? `<button class="px pink" disabled>곧 출발!</button>`
-      : `<button class="px pink" id="pvpRetry">다시 매칭</button><button class="px" id="pvpClose">닫기</button>`;
-    const retry = $("#pvpRetry");
-    if(retry) retry.onclick = ()=>startPvpRace();
-    const close = $("#pvpClose");
-    if(close) close.onclick = closeModal;
+      : `<button class="px" id="pvpMatchCancel">매칭 취소</button>`;
+    const cancel = $("#pvpMatchCancel");
+    if(cancel) cancel.onclick = cancelPvpMatch;
   }
+}
+
+async function leavePvpQueue(){
+  const channel = pvpChannel;
+  pvpChannel = null;
+  if(!channel || !sb) return;
+  try { await channel.untrack(); } catch(e){ console.warn("PVP untrack failed", e); }
+  try { await sb.removeChannel(channel); } catch(e){ console.warn("PVP channel cleanup failed", e); }
+}
+
+function cancelPvpMatch(){
+  pvpMatchToken++;
+  pvpMatchLocked = false;
+  raceStarting = false;
+  leavePvpQueue();
+  closeModal();
+}
+
+function pvpPresencePlayers(){
+  if(!pvpChannel) return [];
+  const presence = pvpChannel.presenceState() || {};
+  const players = new Map();
+  Object.entries(presence).forEach(([key, entries])=>{
+    const list = Array.isArray(entries) ? entries : [entries];
+    list.forEach(p=>{
+      const userId = String(p?.user_id || key || "");
+      if(!userId || players.has(userId)) return;
+      const entrant = sanitizeRivalHorse({ nickname:p?.nickname, best_horse:p?.horse });
+      if(!entrant) return;
+      players.set(userId, {
+        userId,
+        entrant,
+        queuedAt: String(p?.queued_at || ""),
+      });
+    });
+  });
+  return [...players.values()].sort((a,b)=>a.queuedAt.localeCompare(b.queuedAt) || a.userId.localeCompare(b.userId));
 }
 
 async function startPvpRace(){
@@ -1681,58 +1730,81 @@ async function startPvpRace(){
   const h = findHorse(raceSel);
   if(!h) return;
   if(!me || !sb){ toast("로그인하면 실제 이웃 목장주와 대전할 수 있어요!"); return; }
+  const token = ++pvpMatchToken;
   raceStarting = true;
+  pvpMatchLocked = false;
+  await leavePvpQueue();
+  if(token !== pvpMatchToken) return;
   showPvpMatchModal(1);
   const mood = moodOf(h);
-  const entrants = [{ name:h.name, breed:h.breed, stats:h.stats, mine:true, treat:hasTreat(h), trait:h.trait, bond:h.bond || 0, moodRace:mood.race || 0 }];
-  let realCount = 0;
-  try {
-    const { data, error } = await sb.from("mmr_profiles")
-      .select("nickname,best_horse").neq("id", me.id).not("best_horse","is",null)
-      .order("updated_at", { ascending:false }).limit(30);
-    warnSetup(error);
-    if(error){
-      updatePvpMatchModal(1, "이웃 목장 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.");
-      raceStarting = false;
+  const mine = { name:h.name, breed:h.breed, stats:{...h.stats}, mine:true, treat:hasTreat(h), trait:h.trait, bond:h.bond || 0, moodRace:mood.race || 0 };
+  const payload = {
+    user_id: me.id,
+    nickname: myNickname || "목장주",
+    queued_at: new Date().toISOString(),
+    horse: { breed:h.breed, stats:{...h.stats}, trait:h.trait, bond:h.bond || 0 },
+  };
+
+  const channel = sb.channel(PVP_QUEUE_TOPIC, { config:{ presence:{ key:me.id } } });
+  pvpChannel = channel;
+  channel.on("presence", { event:"sync" }, ()=>{
+    if(token !== pvpMatchToken || pvpMatchLocked || pvpChannel !== channel) return;
+    const players = pvpPresencePlayers();
+    const meQueued = players.some(p=>p.userId === me.id);
+    if(!meQueued){
+      updatePvpMatchModal(1, "대기열에 등록하는 중이에요…");
       return;
     }
-    const pool = (data || []).sort(()=>Math.random()-0.5).slice(0, 5);
-    for(const p of pool){
-      const e = sanitizeRivalHorse(p);
-      if(e){ entrants.push(e); realCount++; }
+    if(players.length < PVP_MIN_PLAYERS){
+      updatePvpMatchModal(players.length, `현재 실제 상대 ${players.length-1}명 대기 중 · 매칭을 누른 유저를 기다리고 있어요.`);
+      return;
     }
-  } catch(e){
-    updatePvpMatchModal(1, "이웃 목장 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.");
-    raceStarting = false;
-    return;
-  }
-  if(entrants.length < PVP_MIN_PLAYERS){
-    raceStarting = false;
-    updatePvpMatchModal(entrants.length, `아직 ${PVP_MIN_PLAYERS - entrants.length}명이 더 필요해요. 실제 유저가 더 저장되면 시작할 수 있어요.`);
-    return;
-  }
-  updatePvpMatchModal(entrants.length, "3명 이상 모였어요. 곧 출발합니다!", true);
-  setTimeout(()=>{
-    if(!raceStarting) return;
-    closeModal();
-    const title = `🏆 목장 대항전 — 목장주 ${entrants.length}명 참전!`;
-    runRace(entrants, title, (ranks, meta)=>{
-      const myRank = ranks.findIndex(e=>e.mine) + 1;
-      const win = myRank === 1;
-      state.coins += win ? 100 : 20;
-      if(win) state.trophies++;
-      h.races++; if(win) h.wins++;
-      addBond(h, win ? 7 : 4);
-      h.coolRace = now() + RACE_COOL*1000;
-      addQuestProgress("race");
-      save();
-      if(me) pushCloudNow();
-      showRaceResult(ranks, myRank, win
-        ? `이웃 목장들을 꺾었어요! 🏆+1, 🪙100 획득!`
-        : `${myRank}등… 이웃들이 강했어요. 위로금 🪙20`, raceBonusSummary(h, meta));
-    });
-    raceStarting = false;
-  }, 900);
+    const group = players.slice(0, 6);
+    if(!group.some(p=>p.userId === me.id)){
+      updatePvpMatchModal(players.length, "앞 경기 참가자들이 출발 중이에요. 다음 경기를 기다려주세요.");
+      return;
+    }
+    pvpMatchLocked = true;
+    const entrants = [mine, ...group.filter(p=>p.userId !== me.id).map(p=>p.entrant)];
+    updatePvpMatchModal(entrants.length, `실제 상대 ${entrants.length-1}명과 매칭됐어요. 곧 출발합니다!`, true);
+    setTimeout(async ()=>{
+      if(token !== pvpMatchToken || !raceStarting) return;
+      await leavePvpQueue();
+      if(token !== pvpMatchToken || !raceStarting) return;
+      closeModal();
+      const title = `🏆 목장 대항전 — 목장주 ${entrants.length}명 실시간 매칭!`;
+      runRace(entrants, title, (ranks, meta)=>{
+        const myRank = ranks.findIndex(e=>e.mine) + 1;
+        const win = myRank === 1;
+        state.coins += win ? 100 : 20;
+        if(win) state.trophies++;
+        h.races++; if(win) h.wins++;
+        addBond(h, win ? 7 : 4);
+        h.coolRace = now() + RACE_COOL*1000;
+        addQuestProgress("race");
+        save();
+        if(me) pushCloudNow();
+        showRaceResult(ranks, myRank, win
+          ? `이웃 목장들을 꺾었어요! 🏆+1, 🪙100 획득!`
+          : `${myRank}등… 이웃들이 강했어요. 위로금 🪙20`, raceBonusSummary(h, meta));
+      });
+      raceStarting = false;
+      pvpMatchLocked = false;
+    }, 1200);
+  }).subscribe(async status=>{
+    if(token !== pvpMatchToken || pvpChannel !== channel) return;
+    if(status === "SUBSCRIBED"){
+      try { await channel.track(payload); }
+      catch(e){
+        console.warn("PVP presence track failed", e);
+        raceStarting = false;
+        updatePvpMatchModal(1, "실시간 대기열 등록에 실패했어요. 매칭을 취소하고 다시 시도해주세요.");
+      }
+    } else if((status === "CHANNEL_ERROR" || status === "TIMED_OUT") && !pvpMatchLocked){
+      raceStarting = false;
+      updatePvpMatchModal(1, "실시간 매칭 서버에 연결하지 못했어요. 잠시 후 다시 시도해주세요.");
+    }
+  });
 }
 
 function raceBonusSummary(h, meta={}){
